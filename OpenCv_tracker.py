@@ -4,14 +4,20 @@ import numpy as np
 videoCapture = cv.VideoCapture(0)
 prevCircle = None
 dist = lambda x1,y1,x2,y2: (x1-x2)**2+(y1-y2)**2
+orange_MIN = np.array([0,92,160],np.uint8)
+orange_MAX = np.array([20,202,255],np.uint8)
 while True:
     ret,frame = videoCapture.read()
+    hsv = cv.cvtColor(frame, cv.COLOR_BGR2HSV)
+    
+    mask = cv.inRange(hsv, orange_MIN, orange_MAX)
+    result = cv.bitwise_and(frame,frame, mask=mask)
     if not ret: break
     
-    grayFrame = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
+    grayFrame = cv.cvtColor(result, cv.COLOR_BGR2GRAY)
     blurFrame = cv.GaussianBlur(grayFrame, (17,17), 0)
     
-    circles = cv.HoughCircles(blurFrame, cv.HOUGH_GRADIENT,1.2,100,param1=100,param2=30,minRadius=50,maxRadius=75)
+    circles = cv.HoughCircles(blurFrame, cv.HOUGH_GRADIENT,1.2,100,param1=100,param2=30,minRadius=1,maxRadius=1000)
     
     if circles is not None:
         circles = np.uint16(np.around(circles))
@@ -27,6 +33,7 @@ while True:
         prevCircle = chosen
     
     cv.imshow("circles",frame)
+    cv.imshow("mask",result)
             
     
     
