@@ -6,6 +6,8 @@ prevCircle = None
 dist = lambda x1,y1,x2,y2: (x1-x2)**2+(y1-y2)**2
 orange_MIN = np.array([0,92,160],np.uint8)
 orange_MAX = np.array([20,202,255],np.uint8)
+x_value = 0
+y_value = 0
 while True:
     ret,frame = videoCapture.read()
     hsv = cv.cvtColor(frame, cv.COLOR_BGR2HSV)
@@ -29,13 +31,15 @@ while True:
                 if dist(chosen[0],chosen[1],prevCircle[0],prevCircle[1]) <= dist(i[0],i[1],prevCircle[0],prevCircle[1]):
                     chosen = i
         cv.circle(frame, (chosen[0],chosen[1]),1,(0,100,100),3)
+        
         cv.circle(frame,(chosen[0],chosen[1]),chosen[2],(255,0,255),3)
         prevCircle = chosen
-    
+        x_value = chosen[0]
+        y_value = chosen[1]
     cv.imshow("circles",frame)
     cv.imshow("mask",result)
             
-    
+    print(x_value)
     
     
     
