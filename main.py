@@ -9,6 +9,7 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 import cv2 as cv
 import numpy as np
+x_value = None
 class VideoThread(threading.Thread):
     def __init__(self):
         super().__init__()
@@ -52,7 +53,9 @@ class VideoThread(threading.Thread):
                 cv.circle(frame, (chosen[0], chosen[1]), 1, (0, 100, 100), 3)
                 cv.circle(frame, (chosen[0], chosen[1]), chosen[2], (255, 0, 255), 3)
                 self.prevCircle = chosen
-
+                global x_value
+                x_value = chosen[0]
+            
             cv.imshow("Circles", frame)
             if cv.waitKey(1) & 0xFF == 27:
                 self.running = False
@@ -86,7 +89,7 @@ class OpenCv(QWidget):
             self.x_ax.set_facecolor('#3A3A3A')# Matcht met de rest
             self.x_ax.tick_params(axis='x', colors='white')
             self.x_ax.tick_params(axis='y', colors='white')
-            self.x_ax.set_ylim(0, 100) # Percentage dus 0-100
+            self.x_ax.set_ylim(0, 600) # Percentage dus 0-100
             self.x_ax.set_ylabel('X-as', color='white')
             self.x_ax.set_xlabel('Time (s)', color='white')
             self.x_ax.set_title('X-as', color='white')
@@ -94,7 +97,7 @@ class OpenCv(QWidget):
             
             self.x_line, = self.x_ax.plot([], [], color='#02AAAA', linewidth=2)
             self.x_data = []
-            self.time_data = list(range(60)) 
+            self.time_data = list(range(1000000)) 
 
             
 
@@ -132,7 +135,7 @@ class OpenCv(QWidget):
             # Timer voor live updates (elke 1000ms = 1 sec)
             self.timer = QTimer()
             self.timer.timeout.connect(self.update_data)
-            self.timer.start(1000)
+            self.timer.start(10)
 
         
         
@@ -142,17 +145,16 @@ class OpenCv(QWidget):
             #Haalt x/RAM data op en update de GUI
             # x data
             
-            x_usage =  10 
             
             
-            self.x_data.append(x_usage)
-            if len(self.x_data) > 60:  # Beperk tot 60 data punten
-                self.x_data.pop(0)
+            
+            self.x_data.append(x_value)
+            
             # Update grafiek
             self.x_line.set_data(self.time_data[-len(self.x_data):], self.x_data)
             self.x_ax.relim()  # Herbereken limieten
             self.x_ax.autoscale_view(scalex=True, scaley=False) # Alleen y-as auto
-            self.x_ax.set_xlim(max(0, len(self.x_data)-60), len(self.x_data))  # Scrollend venster
+            
             self.x_canvas.draw()  # Teken opnieuw
             
             
