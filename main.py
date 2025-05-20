@@ -23,40 +23,46 @@ class VideoThread(threading.Thread):
 
 
 
-x_value = 0
-y_value = 0
-while True:
-    ret,frame = videoCapture.read()
-    hsv = cv.cvtColor(frame, cv.COLOR_BGR2HSV)
-    
-    mask = cv.inRange(hsv, orange_MIN, orange_MAX)
-    result = cv.bitwise_and(frame,frame, mask=mask)
-    if not ret: break
-    
-    grayFrame = cv.cvtColor(result, cv.COLOR_BGR2GRAY)
-    blurFrame = cv.GaussianBlur(grayFrame, (17,17), 0)
-    
-    circles = cv.HoughCircles(blurFrame, cv.HOUGH_GRADIENT,1.2,100,param1=100,param2=30,minRadius=1,maxRadius=1000)
-    
-    if circles is not None:
-        circles = np.uint16(np.around(circles))
-        chosen = None
-        for i in circles[0,:]:
-            if chosen is None :
-                chosen = i
-            if prevCircle is not None :
-                if dist(chosen[0],chosen[1],prevCircle[0],prevCircle[1]) <= dist(i[0],i[1],prevCircle[0],prevCircle[1]):
-                    chosen = i
-        cv.circle(frame, (chosen[0],chosen[1]),1,(0,100,100),3)
-        
-        cv.circle(frame,(chosen[0],chosen[1]),chosen[2],(255,0,255),3)
-        prevCircle = chosen
-        x_value = chosen[0]
-        y_value = chosen[1]
-    cv.imshow("circles",frame)
+
+    def run(self):
+        while self.running:
+            ret, frame = self.videoCapture.read()
+            if not ret:
+                break
+
+            hsv = cv.cvtColor(frame, cv.COLOR_BGR2HSV)
+            mask = cv.inRange(hsv, self.orange_MIN, self.orange_MAX)
+            result = cv.bitwise_and(frame, frame, mask=mask)
+
+            gray = cv.cvtColor(result, cv.COLOR_BGR2GRAY)
+            blur = cv.GaussianBlur(gray, (17, 17), 0)
+
+            circles = cv.HoughCircles(blur, cv.HOUGH_GRADIENT, 1.2, 100, param1=100, param2=30, minRadius=1, maxRadius=1000)
+
+            if circles is not None:
+                circles = np.uint16(np.around(circles))
+                chosen = None
+                for i in circles[0, :]:
+                    if chosen is None:
+                        chosen = i
+                    if self.prevCircle is not None:
+                        if self.dist(chosen[0], chosen[1], self.prevCircle[0], self.prevCircle[1]) > \
+                                self.dist(i[0], i[1], self.prevCircle[0], self.prevCircle[1]):
+                            chosen = i
+                cv.circle(frame, (chosen[0], chosen[1]), 1, (0, 100, 100), 3)
+                cv.circle(frame, (chosen[0], chosen[1]), chosen[2], (255, 0, 255), 3)
+                self.prevCircle = chosen
+
+            cv.imshow("Circles", frame)
+            if cv.waitKey(1) & 0xFF == 27:
+                self.running = False
+                break
+
+        self.videoCapture.release()
+        cv.destroyAllWindows()
     
             
-    class OpenCv(QWidget):
+class OpenCv(QWidget):
         def __init__(self):
             super().__init__()
             # Basisinstellingen voor het venster
@@ -151,22 +157,28 @@ while True:
             
             
             
-            
+             
 
         def closeEvent(self, event):
             event.accept()   # Laat het venster sluiten
 
-    if __name__ == "__main__":
-            app = QApplication(sys.argv)
-            window = OpenCv()
-            window.show()
-            sys.exit(app.exec_())  # Start de applicatie
+if __name__ == "__main__":
+    opencv_thread = VideoThread()
+    opencv_thread.start()
+
+    # Start PyQt GUI
+    app = QApplication(sys.argv)
+    window = OpenCv()
+    window.show()
+    app.exec_()
+
+    # Stop de video thread als GUI gesloten is
+    opencv_thread.running = False
+    opencv_thread.join()
+            
     
     
     
     
-    if cv.waitKey(1) == (27): break
     
-videoCapture.release()
-cv.destroyAllWindows()
 
