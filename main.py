@@ -9,11 +9,20 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 import cv2 as cv
 import numpy as np
-videoCapture = cv.VideoCapture(0)
-prevCircle = None
-dist = lambda x1,y1,x2,y2: (x1-x2)**2+(y1-y2)**2
-orange_MIN = np.array([0,92,160],np.uint8)
-orange_MAX = np.array([20,202,255],np.uint8)
+class VideoThread(threading.Thread):
+    def __init__(self):
+        super().__init__()
+        self.videoCapture = cv.VideoCapture(0)
+        self.running = True
+        self.prevCircle = None
+        self.orange_MIN = np.array([0, 92, 160], np.uint8)
+        self.orange_MAX = np.array([20, 202, 255], np.uint8)
+        
+    def dist(self, x1, y1, x2, y2):
+        return (x1 - x2) ** 2 + (y1 - y2) ** 2
+
+
+
 x_value = 0
 y_value = 0
 while True:

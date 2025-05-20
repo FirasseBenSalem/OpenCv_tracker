@@ -38,7 +38,7 @@ while True:
         y_value = chosen[1]
     cv.imshow("circles",frame)
     cv.imshow("mask",result)
-            
+                
     print(x_value)
     
     
