@@ -97,7 +97,10 @@ class OpenCv(QWidget):
             
             self.x_line, = self.x_ax.plot([], [], color='#02AAAA', linewidth=2)
             self.x_data = []
-            self.time_data = list(range(1000000)) 
+            self.time_data = list(range(60))
+            if len(self.x_data) > 60:  
+                self.x_data.pop(0)
+            self.x_ax.set_xlim(max(0, len(self.x_data)-60), len(self.x_data))
 
             
 
@@ -132,10 +135,15 @@ class OpenCv(QWidget):
             
             
             self.setLayout(main_layout)
-            # Timer voor live updates (elke 1000ms = 1 sec)
-            self.timer = QTimer()
-            self.timer.timeout.connect(self.update_data)
-            self.timer.start(10)
+            self.x_data.append(x_value)
+            if len(self.x_data) > 60:  # Beperk tot 60 data punten
+                self.x_data.pop(0)
+            # Update grafiek
+            self.x_line.set_data(self.time_data[-len(self.x_data):], self.x_data)
+            self.x_ax.relim()  # Herbereken limieten
+            
+            self.x_ax.set_xlim(max(0, len(self.x_data)-60), len(self.x_data))  # Scrollend venster
+            self.x_canvas.draw()
 
         
         
