@@ -66,104 +66,34 @@ class VideoThread(threading.Thread):
     
             
 class OpenCv(QWidget):
-        def __init__(self):
-            super().__init__()
-            # Basisinstellingen voor het venster
-            self.setWindowTitle("OpenCv tracker")
-            self.setGeometry(100, 100, 600, 500)# x, y, width, height
-            self.setStyleSheet("""
-                background-color: #2E2E2E;
-                color: #FFFFFF;
-            """)
+    def __init__(self):
+        super().__init__()
+        # ... jouw bestaande init code ...
 
-            # Variabelen voor belasting
-            self.x_load_active = False# Of de x belast wordt
-            
+        self.x_data = []
+        self.max_points = 100  # Max aantal data punten zichtbaar
+        self.x_line, = self.x_ax.plot([], [], color='#02AAAA', linewidth=2)
 
-            # Matplotlib setup voor x grafiek
-            self.x_figure = Figure(facecolor='#3A3A3A') # Donkere achtergrond
-            self.x_canvas = FigureCanvas(self.x_figure)
-            self.x_ax = self.x_figure.add_subplot(111)  # 1 rij, 1 kolom, 1e plot
-            
-            # Styling van de grafiek
-            self.x_ax.set_facecolor('#3A3A3A')# Matcht met de rest
-            self.x_ax.tick_params(axis='x', colors='white')
-            self.x_ax.tick_params(axis='y', colors='white')
-            self.x_ax.set_ylim(0, 600) # Percentage dus 0-100
-            self.x_ax.set_ylabel('X-as', color='white')
-            self.x_ax.set_xlabel('Time (s)', color='white')
-            self.x_ax.set_title('X-as', color='white')
-            self.x_ax.grid(True, color='#555555') 
-            
-            self.x_line, = self.x_ax.plot([], [], color='#02AAAA', linewidth=2)
-            self.x_data = []
-            self.time_data = list(range(60))
-            if len(self.x_data) > 60:  
-                self.x_data.pop(0)
-            self.x_ax.set_xlim(max(0, len(self.x_data)-60), len(self.x_data))
+        # Timer om de grafiek regelmatig te updaten
+        self.timer = QTimer()
+        self.timer.timeout.connect(self.update_data)
+        self.timer.start(100)  # update elke 100 ms
 
-            
-
-            
-            self.x_label = QLabel("Open Cv tracker")
-            self.x_label.setStyleSheet("""
-                font-size: 28px;
-                font-weight: bold;
-                color: #02AAAA;
-            """)
-
-            
-            
-            
-
-            
-
-            
-            
-            # Hoofd layout (alles onder elkaar)
-            main_layout = QVBoxLayout()
-            # x frame met grafiek
-            x_frame = QFrame()
-            x_frame.setStyleSheet("background-color: #3A3A3A; border-radius: 7px;")
-            x_layout = QVBoxLayout(x_frame)
-            x_layout.addWidget(self.x_label)
-            x_layout.addWidget(self.x_canvas)  # Voeg grafiek toe
-            # RAM frame met progress bar 
-        
-            # Voeg alles toe aan hoofd layout     
-            main_layout.addWidget(x_frame)
-            
-            
-            self.setLayout(main_layout)
+    def update_data(self):
+        global x_value
+        if x_value is not None:
             self.x_data.append(x_value)
-            if len(self.x_data) > 60:  # Beperk tot 60 data punten
-                self.x_data.pop(0)
-            # Update grafiek
-            self.x_line.set_data(self.time_data[-len(self.x_data):], self.x_data)
-            self.x_ax.relim()  # Herbereken limieten
-            
-            self.x_ax.set_xlim(max(0, len(self.x_data)-60), len(self.x_data))  # Scrollend venster
-            self.x_canvas.draw()
 
-        
-        
-        
+        # Beperk data tot max 100 punten
+        if len(self.x_data) > self.max_points:
+            self.x_data.pop(0)
 
-        def update_data(self):
-            #Haalt x/RAM data op en update de GUI
-            # x data
-            
-            
-            
-            
-            self.x_data.append(x_value)
-            
-            # Update grafiek
-            self.x_line.set_data(self.time_data[-len(self.x_data):], self.x_data)
-            self.x_ax.relim()  # Herbereken limieten
-            self.x_ax.autoscale_view(scalex=True, scaley=False) # Alleen y-as auto
-            
-            self.x_canvas.draw()  # Teken opnieuw
+        # Update x-as limiet zodat laatste 100 zichtbaar zijn
+        self.x_line.set_data(range(len(self.x_data)), self.x_data)
+        self.x_ax.set_xlim(0, self.max_points)
+        self.x_ax.set_ylim(0, 640)  # Pas aan als nodig (bijv. webcam breedte)
+
+        self.x_canvas.draw()
             
             
             
