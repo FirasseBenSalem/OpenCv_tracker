@@ -14,7 +14,9 @@ x_value = None
 class VideoThread(threading.Thread):
     def __init__(self):
         super().__init__()
-        self.videoCapture = cv.VideoCapture(0)
+        self.videoCapture = cv.VideoCapture("openneer.mp4")
+        self.fps = self.videoCapture.get(cv.CAP_PROP_FPS)
+        self.frame_delay = 1.0 / self.fps 
         self.running = True
         self.prevCircle = None
         self.orange_MIN = np.array([0, 92, 160], np.uint8)
@@ -58,6 +60,7 @@ class VideoThread(threading.Thread):
                 x_value = chosen[0]
 
             cv.imshow("Circles", frame)
+            time.sleep(self.frame_delay)
             if cv.waitKey(1) & 0xFF == 27:
                 self.running = False
                 break
@@ -98,7 +101,9 @@ class OpenCv(QWidget):
             
             self.x_line, = self.x_ax.plot([], [], color='#02AAAA', linewidth=2)
             self.x_data = []
-            self.time_data = list(range(60)) 
+            self.max_seconds = 10
+            self.max_data = self.max_seconds * self.fps
+            self.time_data = list(np.linspace(0, self.max_seconds, self.max_points)) 
 
             
 
@@ -136,7 +141,7 @@ class OpenCv(QWidget):
             # Timer voor live updates (elke 1000ms = 1 sec)
             self.timer = QTimer()
             self.timer.timeout.connect(self.update_data)
-            self.timer.start(100)
+            self.timer.start(10)
 
         
         
@@ -150,13 +155,13 @@ class OpenCv(QWidget):
             
             
             self.x_data.append(x_value)
-            if len(self.x_data) >60:  # Beperk tot 60 data punten
+            if len(self.x_data) > self.max_points:
                 self.x_data.pop(0)
             # Update grafiek
             self.x_line.set_data(self.time_data[-len(self.x_data):], self.x_data)
             self.x_ax.relim()  # Herbereken limieten
             self.x_ax.autoscale_view(scalex=True, scaley=False) # Alleen y-as auto
-            self.x_ax.set_xlim(max(0, len(self.x_data)-60), len(self.x_data))  # Scrollend venster
+            self.x_ax.set_xlim(0, self.max_seconds)
             self.x_canvas.draw()  # Teken opnieuw
             
             
