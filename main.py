@@ -26,11 +26,13 @@ class VideoThread(threading.Thread):
         return (x1 - x2) ** 2 + (y1 - y2) ** 2
 
 
-
+    
 
     def run(self):
         while self.running:
             ret, frame = self.videoCapture.read()
+            frame = cv.rotate(frame, cv.ROTATE_90_CLOCKWISE)
+    
             if not ret:
                 break
 
@@ -58,7 +60,7 @@ class VideoThread(threading.Thread):
                 self.prevCircle = chosen
                 global x_value
                 x_value = chosen[0]
-
+            
             cv.imshow("Circles", frame)
             time.sleep(self.frame_delay)
             if cv.waitKey(1) & 0xFF == 27:
@@ -69,7 +71,7 @@ class VideoThread(threading.Thread):
         cv.destroyAllWindows()
     
             
-class OpenCv(QWidget):
+class OpenCv(QWidget,VideoThread):
         def __init__(self):
             super().__init__()
             # Basisinstellingen voor het venster
@@ -103,8 +105,9 @@ class OpenCv(QWidget):
             self.x_data = []
             self.max_seconds = 10
             self.max_data = self.max_seconds * self.fps
-            self.time_data = list(np.linspace(0, self.max_seconds, self.max_points)) 
-
+            
+            self.time_data = np.linspace(0, int(self.max_data)) 
+            #print(self.time_data)
             
 
             
@@ -155,9 +158,12 @@ class OpenCv(QWidget):
             
             
             self.x_data.append(x_value)
-            if len(self.x_data) > self.max_points:
+            print(self.x_data)
+            if len(self.x_data) > self.max_data:
                 self.x_data.pop(0)
             # Update grafiek
+            #print(self.time_data[-len(self.x_data):].shape)
+            
             self.x_line.set_data(self.time_data[-len(self.x_data):], self.x_data)
             self.x_ax.relim()  # Herbereken limieten
             self.x_ax.autoscale_view(scalex=True, scaley=False) # Alleen y-as auto
