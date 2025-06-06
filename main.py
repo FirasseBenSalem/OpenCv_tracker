@@ -10,13 +10,12 @@ from matplotlib.figure import Figure
 import cv2 as cv
 import numpy as np
 x_value = None
+y_value = None
 
 class VideoThread(threading.Thread):
     def __init__(self):
         super().__init__()
-        self.videoCapture = cv.VideoCapture("openneer.mp4")
-        self.fps = self.videoCapture.get(cv.CAP_PROP_FPS)
-        self.frame_delay = 1.0 / self.fps 
+        self.videoCapture = cv.VideoCapture(0)
         self.running = True
         self.prevCircle = None
         self.orange_MIN = np.array([0, 92, 160], np.uint8)
@@ -26,13 +25,11 @@ class VideoThread(threading.Thread):
         return (x1 - x2) ** 2 + (y1 - y2) ** 2
 
 
-    
+
 
     def run(self):
         while self.running:
             ret, frame = self.videoCapture.read()
-            frame = cv.rotate(frame, cv.ROTATE_90_CLOCKWISE)
-    
             if not ret:
                 break
 
@@ -60,9 +57,10 @@ class VideoThread(threading.Thread):
                 self.prevCircle = chosen
                 global x_value
                 x_value = chosen[0]
-            
+                global y_value
+                y_value = chosen[0]
+
             cv.imshow("Circles", frame)
-            time.sleep(self.frame_delay)
             if cv.waitKey(1) & 0xFF == 27:
                 self.running = False
                 break
@@ -71,7 +69,7 @@ class VideoThread(threading.Thread):
         cv.destroyAllWindows()
     
             
-class OpenCv(QWidget,VideoThread):
+class OpenCv(QWidget):
         def __init__(self):
             super().__init__()
             # Basisinstellingen voor het venster
@@ -84,12 +82,17 @@ class OpenCv(QWidget,VideoThread):
 
             # Variabelen voor belasting
             self.x_load_active = False# Of de x belast wordt
-            
+            self.y_load_active = False# Of de y belast wordt
 
             # Matplotlib setup voor x grafiek
             self.x_figure = Figure(facecolor='#3A3A3A') # Donkere achtergrond
             self.x_canvas = FigureCanvas(self.x_figure)
             self.x_ax = self.x_figure.add_subplot(111)  # 1 rij, 1 kolom, 1e plot
+            
+            # Matplotlib setup voor y grafiek
+            self.y_figure = Figure(facecolor='#3A3A3A') # Donkere achtergrond
+            self.y_canvas = FigureCanvas(self.y_figure)
+            self.y_ax = self.y_figure.add_subplot(111)  # 1 rij, 1 kolom, 1e plot
             
             # Styling van de grafiek
             self.x_ax.set_facecolor('#3A3A3A')# Matcht met de rest
@@ -99,15 +102,26 @@ class OpenCv(QWidget,VideoThread):
             self.x_ax.set_ylabel('X-as', color='white')
             self.x_ax.set_xlabel('Time (s)', color='white')
             self.x_ax.set_title('X-as', color='white')
-            self.x_ax.grid(True, color='#555555') 
-            
+            self.x_ax.grid(True, color='#555555')
             self.x_line, = self.x_ax.plot([], [], color='#02AAAA', linewidth=2)
             self.x_data = []
-            self.max_seconds = 10
-            self.max_data = self.max_seconds * self.fps
             
-            self.time_data = np.linspace(0, int(self.max_data)) 
-            #print(self.time_data)
+            # Styling van de grafiek
+            self.y_ax.set_facecolor('#3A3A3A')# Matcht met de rest
+            self.y_ax.tick_params(axis='x', colors='white')
+            self.y_ax.tick_params(axis='y', colors='white')
+            self.y_ax.set_ylim(0, 600) # Percentage dus 0-100
+            self.y_ax.set_ylabel('x-as', color='white')
+            self.y_ax.set_xlabel('Time (s)', color='white')
+            self.y_ax.set_title('x-as', color='white')
+            self.y_ax.grid(True, color='#555555')
+            
+            self.y_line, = self.y_ax.plot([], [], color='#02AAAA', linewidth=2)
+            self.y_data = []
+            
+            self.time_data = list(range(60))
+            self.ytime_data = list(range(60)) 
+
             
 
             
@@ -117,7 +131,13 @@ class OpenCv(QWidget,VideoThread):
                 font-weight: bold;
                 color: #02AAAA;
             """)
-
+            
+            self.y_label = QLabel("")
+            self.y_label.setStyleSheet("""
+                font-size: 28py;
+                font-weight: bold;
+                color: #02AAAA;
+            """)
             
             
             
@@ -134,17 +154,29 @@ class OpenCv(QWidget,VideoThread):
             x_layout = QVBoxLayout(x_frame)
             x_layout.addWidget(self.x_label)
             x_layout.addWidget(self.x_canvas)  # Voeg grafiek toe
-            # RAM frame met progress bar 
+            
+            # y frame met grafiek
+            y_frame = QFrame()
+            y_frame.setStyleSheet("background-color: #3A3A3A; border-radius: 7py;")
+            y_layout = QVBoxLayout(y_frame)
+            y_layout.addWidget(self.y_label)
+            y_layout.addWidget(self.y_canvas)  # Voeg grafiek toe
+            
+            
+            
         
             # Voeg alles toe aan hoofd layout     
             main_layout.addWidget(x_frame)
+            
+            # Voeg alles toe aan hoofd layout     
+            main_layout.addWidget(y_frame)
             
             
             self.setLayout(main_layout)
             # Timer voor live updates (elke 1000ms = 1 sec)
             self.timer = QTimer()
             self.timer.timeout.connect(self.update_data)
-            self.timer.start(10)
+            self.timer.start(100)
 
         
         
@@ -158,17 +190,24 @@ class OpenCv(QWidget,VideoThread):
             
             
             self.x_data.append(x_value)
-            print(self.x_data)
-            if len(self.x_data) > self.max_data:
+            if len(self.x_data) >60:  # Beperk tot 60 data punten
                 self.x_data.pop(0)
             # Update grafiek
-            #print(self.time_data[-len(self.x_data):].shape)
-            
             self.x_line.set_data(self.time_data[-len(self.x_data):], self.x_data)
             self.x_ax.relim()  # Herbereken limieten
             self.x_ax.autoscale_view(scalex=True, scaley=False) # Alleen y-as auto
-            self.x_ax.set_xlim(0, self.max_seconds)
+            self.x_ax.set_xlim(max(0, len(self.x_data)-60), len(self.x_data))  # Scrollend venster
             self.x_canvas.draw()  # Teken opnieuw
+            
+            self.y_data.append(y_value)
+            if len(self.y_data) >60:  # Beperk tot 60 data punten
+                self.y_data.pop(0)
+            # Update grafiek
+            self.y_line.set_data(self.ytime_data[-len(self.y_data):], self.y_data)
+            self.y_ax.relim()  # Herbereken limieten
+            self.y_ax.autoscale_view(scalex=True, scaley=False) # Alleen y-as auto
+            self.y_ax.set_ylim(max(0, len(self.y_data)-60), len(self.y_data))  # Scrollend venster
+            self.y_canvas.draw()  # Teken opnieuw
             
             
             
@@ -190,7 +229,7 @@ if __name__ == "__main__":
     # Stop de video thread als GUI gesloten is
     opencv_thread.running = False
     opencv_thread.join()
-    print(cv2.CAP_PROP_FPS)
+    
             
     
     
