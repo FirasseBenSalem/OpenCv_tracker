@@ -116,7 +116,7 @@ class OpenCv(QWidget):
             self.y_ax.set_title('Y-as', color='white')
             self.y_ax.grid(True, color='#555555')
             
-            self.y_line, = self.y_ax.plot([], [], color='#02AAAA', linewidth=2)
+            self.y_line, = self.y_ax.plot([], [], color='#eb4933', linewidth=2)
             self.y_data = []
             
             self.time_data = list(range(60))
@@ -204,10 +204,12 @@ class OpenCv(QWidget):
                 self.y_data.pop(0)
             # Update grafiek
             self.y_line.set_data(self.ytime_data[-len(self.y_data):], self.y_data)
-            self.y_ax.relim()  # Herbereken limieten
-            self.y_ax.autoscale_view(scalex=False, scaley=True) # Alleen y-as auto
-            self.y_ax.set_ylim(max(0, len(self.y_data)-60), len(self.y_data))  # Scrollend venster
-            self.y_canvas.draw()  # Teken opnieuw
+            self.y_ax.relim()
+            self.y_ax.autoscale_view(scalex=False, scaley=False)
+            self.y_ax.set_ylim(0, 600)  # Houd y tussen 0 en 600 pixels
+            self.y_ax.set_xlim(max(0, len(self.y_data)-60), len(self.y_data))  # Scrollend in tijd
+            self.y_canvas.draw()
+                                      # Teken opnieuw
             
             
             
