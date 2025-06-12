@@ -58,7 +58,7 @@ class VideoThread(threading.Thread):
                 global x_value
                 x_value = chosen[0]
                 global y_value
-                y_value = chosen[0]
+                y_value = chosen[1]
 
             cv.imshow("Circles", frame)
             if cv.waitKey(1) & 0xFF == 27:
@@ -111,9 +111,9 @@ class OpenCv(QWidget):
             self.y_ax.tick_params(axis='x', colors='white')
             self.y_ax.tick_params(axis='y', colors='white')
             self.y_ax.set_ylim(0, 600) # Percentage dus 0-100
-            self.y_ax.set_ylabel('x-as', color='white')
+            self.y_ax.set_ylabel('Y-as', color='white')
             self.y_ax.set_xlabel('Time (s)', color='white')
-            self.y_ax.set_title('x-as', color='white')
+            self.y_ax.set_title('Y-as', color='white')
             self.y_ax.grid(True, color='#555555')
             
             self.y_line, = self.y_ax.plot([], [], color='#02AAAA', linewidth=2)
@@ -205,7 +205,7 @@ class OpenCv(QWidget):
             # Update grafiek
             self.y_line.set_data(self.ytime_data[-len(self.y_data):], self.y_data)
             self.y_ax.relim()  # Herbereken limieten
-            self.y_ax.autoscale_view(scalex=True, scaley=False) # Alleen y-as auto
+            self.y_ax.autoscale_view(scalex=False, scaley=True) # Alleen y-as auto
             self.y_ax.set_ylim(max(0, len(self.y_data)-60), len(self.y_data))  # Scrollend venster
             self.y_canvas.draw()  # Teken opnieuw
             
