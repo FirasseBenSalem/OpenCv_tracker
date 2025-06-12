@@ -195,7 +195,7 @@ class OpenCv(QWidget):
             # Update grafiek
             self.x_line.set_data(self.time_data[-len(self.x_data):], self.x_data)
             self.x_ax.relim()  # Herbereken limieten
-            self.x_ax.autoscale_view(scalex=True, scaley=False) # Alleen y-as auto
+            self.x_ax.autoscale_view(scalex=False, scaley=False) # Alleen y-as auto
             self.x_ax.set_xlim(max(0, len(self.x_data)-60), len(self.x_data))  # Scrollend venster
             self.x_canvas.draw()  # Teken opnieuw
             
