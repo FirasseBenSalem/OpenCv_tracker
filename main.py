@@ -2,13 +2,14 @@ import sys
 import time
 import threading
 from PyQt5.QtWidgets import (QApplication, QWidget, QVBoxLayout, QLabel, 
-                             QHBoxLayout, QFrame
-                             )
+                             QHBoxLayout, QFrame, QPushButton)
+
 from PyQt5.QtCore import QTimer, Qt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 import cv2 as cv
 import numpy as np
+
 x_value = None
 y_value = None
 
@@ -20,13 +21,14 @@ class VideoThread(threading.Thread):
         self.prevCircle = None
         self.orange_MIN = np.array([0, 92, 160], np.uint8)
         self.orange_MAX = np.array([20, 202, 255], np.uint8)
-        
+        self.points = []  #lijst om punten te bewaren voor het lijn
+
     def dist(self, x1, y1, x2, y2):
         return (x1 - x2) ** 2 + (y1 - y2) ** 2
 
-
-
-
+    
+    
+    
     def run(self):
         while self.running:
             ret, frame = self.videoCapture.read()
@@ -60,6 +62,15 @@ class VideoThread(threading.Thread):
                 global y_value
                 y_value = chosen[1]
 
+                #voeg de positie toe aan het lijn
+                self.points.append((chosen[0], chosen[1]))
+                if len(self.points) > 100:
+                    self.points.pop(0)
+
+               #teken lijnen tussen punten
+                for i in range(1, len(self.points)):
+                    cv.line(frame, self.points[i - 1], self.points[i], (0, 255, 0), 2)
+
             cv.imshow("Circles", frame)
             if cv.waitKey(1) & 0xFF == 27:
                 self.running = False
@@ -67,8 +78,7 @@ class VideoThread(threading.Thread):
 
         self.videoCapture.release()
         cv.destroyAllWindows()
-    
-            
+
 class OpenCv(QWidget):
         def __init__(self):
             super().__init__()
@@ -231,11 +241,4 @@ if __name__ == "__main__":
     # Stop de video thread als GUI gesloten is
     opencv_thread.running = False
     opencv_thread.join()
-    
-            
-    
-    
-    
-    
-    
 
