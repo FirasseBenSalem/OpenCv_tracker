@@ -91,7 +91,7 @@ class VideoThread(threading.Thread):
                 global x_value
                 x_value = chosen[0]
                 global y_value
-                y_value = chosen[1]
+                y_value = chosen[1]#de x en y coordinaten worden naar het pyqt gui  geimporteert met behulp van dit
 
                 #voeg de positie toe aan het lijn
                 self.points.append((chosen[0], chosen[1]))
@@ -219,7 +219,7 @@ class OpenCv(QWidget):
 
             
             self.tabs = QTabWidget()
-            self.tab1 = QWidget()
+            self.tab1 = QWidget()# de tabs die niet goed werken boven de grafieken
             self.tab2 = QWidget()
             self.tabs.addTab(self.tab1, "Grafiek")
             self.tabs.addTab(self.tab2, "Tabel")
