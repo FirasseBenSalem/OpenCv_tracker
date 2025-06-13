@@ -2,7 +2,7 @@ import sys
 import time
 import threading
 from PyQt5.QtWidgets import (QApplication, QWidget, QVBoxLayout, QLabel, 
-                             QHBoxLayout, QFrame, QPushButton)
+                             QHBoxLayout, QFrame, QPushButton, QTabWidget,QTableView)
 
 from PyQt5.QtCore import QTimer, Qt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
@@ -37,30 +37,30 @@ class VideoThread(threading.Thread):
             if not ret:
                 break
 
-            hsv = cv.cvtColor(frame, cv.COLOR_BGR2HSV)
-            mask = cv.inRange(hsv, self.orange_MIN, self.orange_MAX)
-            result = cv.bitwise_and(frame, frame, mask=mask)
+            hsv = cv.cvtColor(frame, cv.COLOR_BGR2HSV)    #gebruik hsv kleur code ipv RGB
+            mask = cv.inRange(hsv, self.orange_MIN, self.orange_MAX)  # Filtert op alleen Oranje kleur zodat alleen de bal zichtbaar zal zijn.
+            result = cv.bitwise_and(frame, frame, mask=mask) 
 
-            gray = cv.cvtColor(result, cv.COLOR_BGR2GRAY)
+            gray = cv.cvtColor(result, cv.COLOR_BGR2GRAY)  #maak het zwart wit zodat er minder verschillen zijn voor het tracken te optimaliseren
 
             # Als al eerder een cirkel gevonden is beperk dan het zoekgebied
-            if self.prevCircle is not None:
+            if self.prevCircle is not None:#zorgt ervoor dat de ROI pas er bij komt nadat de bal als eerst wordt gevonden.
                 x, y, r = self.prevCircle
-                radius = 100  # Hoe groot het zoekgebied rond vorige cirkel is
+                radius = 150  # Hoe groot het zoekgebied rond vorige cirkel is
                 x1 = max(0, x - radius)
-                y1 = max(0, y - radius)
+                y1 = max(0, y - radius)# De ROI vierkant wordt hier bepaald door de radius plus het coordinaat van de getrackde circel zelf.
                 x2 = min(gray.shape[1], x + radius)
                 y2 = min(gray.shape[0], y + radius)
                 
                 cropped = gray[y1:y2, x1:x2]
-                blur = cv.GaussianBlur(cropped, (17, 17), 0)
+                blur = cv.GaussianBlur(cropped, (17, 17), 0)  #blurt de circel zodat hij makkelijker als circel gezien wordt.
 
                 circles = cv.HoughCircles(blur, cv.HOUGH_GRADIENT, 1.2, 100,
-                                           param1=100, param2=30, minRadius=1, maxRadius=1000)
+                                           param1=100, param2=30, minRadius=1, maxRadius=1000) #hoe groot en hoe klein de circel mag zijn en hoe rond de cricel moet zijn.
 
                 if circles is not None:
                     circles = np.uint16(np.around(circles))
-                    # Pas cirkelcoördinaten aan naar volledige beeld
+                    # Pas cirkelcoordinaten aan naar volledige beeld
                     for i in circles[0, :]:
                         i[0] += x1
                         i[1] += y1
@@ -111,7 +111,7 @@ class VideoThread(threading.Thread):
                 rgb_image = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
                 h, w, ch = rgb_image.shape
                 bytes_per_line = ch * w
-                qt_image = QImage(rgb_image.data, w, h, bytes_per_line, QImage.Format_RGB888)
+                qt_image = QImage(rgb_image.data, w, h, bytes_per_line, QImage.Format_RGB888) #dit had heb ik van een andere code die ik eerde rhad gemaakt maar het werkte niet omdat ik in de pyqt5 classe fouten heb gemaakt.
                 pixmap = QPixmap.fromImage(qt_image)
                 self.video_label.setPixmap(pixmap)
 
@@ -123,7 +123,7 @@ class OpenCv(QWidget):
             super().__init__()
             # Basisinstellingen voor het venster
             self.setWindowTitle("OpenCv tracker")
-            self.setGeometry(100, 100, 600, 600)# x, y, width, height
+            self.setGeometry(100, 100, 1200, 900)# x, y, width, height
             self.setStyleSheet("""
                 background-color: #2E2E2E;
                 color: #FFFFFF;
@@ -200,13 +200,15 @@ class OpenCv(QWidget):
             
             # Hoofd layout (alles onder elkaar)
             main_layout = QHBoxLayout()
-            
+            sub_main_layout = QVBoxLayout()
+            button_layout = QHBoxLayout()
+            grafiek_layout = QVBoxLayout()
             
             
             
             
             #buttons voor start en stop
-            button_layout = QHBoxLayout()
+            
             self.start_button = QPushButton("Start grafiek")
             self.start_button.setStyleSheet("background-color: #02AAAA; color: white; font-size: 16px;")
             self.start_button.clicked.connect(self.start_graph)
@@ -215,7 +217,18 @@ class OpenCv(QWidget):
             self.stop_button.setStyleSheet("background-color: #eb4933; color: white; font-size: 16px;")
             self.stop_button.clicked.connect(self.stop_graph)
 
-            grafiek_layout = QVBoxLayout()
+            
+            self.tabs = QTabWidget()
+            self.tab1 = QWidget()
+            self.tab2 = QWidget()
+            self.tabs.addTab(self.tab1, "Grafiek")
+            self.tabs.addTab(self.tab2, "Tabel")
+            
+            
+            
+            
+            
+            
             # x frame met grafiek
             
             x_frame = QFrame()
@@ -232,15 +245,17 @@ class OpenCv(QWidget):
             y_layout.addWidget(self.y_canvas)  # Voeg grafiek toe
             
             
+            sub_main_layout.addWidget(self.tabs)
             
-        
             # Voeg alles toe aan hoofd layout     
             grafiek_layout.addWidget(x_frame)
             
             # Voeg alles toe aan hoofd layout     
             grafiek_layout.addWidget(y_frame)
             
-            main_layout.addLayout(grafiek_layout)
+            
+            sub_main_layout.addLayout(grafiek_layout)
+            
             
             self.setLayout(main_layout)
             # Timer voor live updates (elke 1000ms = 1 sec)
@@ -248,14 +263,16 @@ class OpenCv(QWidget):
             self.timer.timeout.connect(self.update_data)
             self.timer.start(100)
             
-            #voeg de buttons toe 
-            button_layout.addWidget(self.start_button)
+            sub_main_layout.addLayout(grafiek_layout)
+            button_layout.addWidget(self.start_button)#Hier voeg ik alle buttons grafiek en videos aan de gepaste layout.
             button_layout.addWidget(self.stop_button)
-            main_layout.addLayout(button_layout)
+            sub_main_layout.addLayout(button_layout)
+            main_layout.addLayout(sub_main_layout)
             main_layout.addWidget(self.video_label)
-        
+            
+            
         def start_graph(self):
-            if not self.timer.isActive():
+            if not self.timer.isActive():#een start en stop knop hier stop de timer en start ik hem weer in de volgende definitie
                 self.timer.start(100)
 
         def stop_graph(self):
