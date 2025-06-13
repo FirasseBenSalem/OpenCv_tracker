@@ -24,6 +24,7 @@ class VideoThread(threading.Thread):
         self.orange_MAX = np.array([47, 246, 255], np.uint8)
         self.points = []  #lijst om punten te bewaren voor het lijn
         #self.total_distance = 0
+        self.video_label = None
     def dist(self, x1, y1, x2, y2):
         return (x1 - x2) ** 2 + (y1 - y2) ** 2
 
@@ -105,14 +106,17 @@ class VideoThread(threading.Thread):
             #           cv.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
             #cv.putText(frame, f"Afstand: {int(self.total_distance)} px", (10, 30),
             #       cv.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-            cv.imshow("Circles", frame)
-            
-            if cv.waitKey(1) & 0xFF == 27:
-                self.running = False
-                break
+            # Toon frame in PyQt5 label
+            if self.video_label is not None:
+                rgb_image = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
+                h, w, ch = rgb_image.shape
+                bytes_per_line = ch * w
+                qt_image = QImage(rgb_image.data, w, h, bytes_per_line, QImage.Format_RGB888)
+                pixmap = QPixmap.fromImage(qt_image)
+                self.video_label.setPixmap(pixmap)
 
         self.videoCapture.release()
-        cv.destroyAllWindows()
+        
 
 class OpenCv(QWidget):
         def __init__(self):
@@ -128,6 +132,9 @@ class OpenCv(QWidget):
             # Variabelen voor belasting
             self.x_load_active = False# Of de x belast wordt
             self.y_load_active = False# Of de y belast wordt
+            
+            self.video_label = QLabel()
+            self.video_label.setFixedSize(600, 600)
 
             # Matplotlib setup voor x grafiek
             self.x_figure = Figure(facecolor='#3A3A3A') # Donkere achtergrond
@@ -192,7 +199,10 @@ class OpenCv(QWidget):
             
             
             # Hoofd layout (alles onder elkaar)
-            main_layout = QVBoxLayout()
+            main_layout = QHBoxLayout()
+            
+            
+            
             
             
             #buttons voor start en stop
@@ -205,8 +215,9 @@ class OpenCv(QWidget):
             self.stop_button.setStyleSheet("background-color: #eb4933; color: white; font-size: 16px;")
             self.stop_button.clicked.connect(self.stop_graph)
 
-            
+            grafiek_layout = QVBoxLayout()
             # x frame met grafiek
+            
             x_frame = QFrame()
             x_frame.setStyleSheet("background-color: #3A3A3A; border-radius: 7px;")
             x_layout = QVBoxLayout(x_frame)
@@ -224,11 +235,12 @@ class OpenCv(QWidget):
             
         
             # Voeg alles toe aan hoofd layout     
-            main_layout.addWidget(x_frame)
+            grafiek_layout.addWidget(x_frame)
             
             # Voeg alles toe aan hoofd layout     
-            main_layout.addWidget(y_frame)
+            grafiek_layout.addWidget(y_frame)
             
+            main_layout.addLayout(grafiek_layout)
             
             self.setLayout(main_layout)
             # Timer voor live updates (elke 1000ms = 1 sec)
@@ -240,6 +252,7 @@ class OpenCv(QWidget):
             button_layout.addWidget(self.start_button)
             button_layout.addWidget(self.stop_button)
             main_layout.addLayout(button_layout)
+            main_layout.addWidget(self.video_label)
         
         def start_graph(self):
             if not self.timer.isActive():
@@ -291,11 +304,13 @@ class OpenCv(QWidget):
 
 if __name__ == "__main__":
     opencv_thread = VideoThread()
-    opencv_thread.start()
+    
 
     # Start PyQt GUI
     app = QApplication(sys.argv)
     window = OpenCv()
+    opencv_thread.video_label = window.video_label  # Geef label door aan thread
+    opencv_thread.start()
     window.show()
     app.exec_()
 
