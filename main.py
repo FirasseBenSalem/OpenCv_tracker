@@ -9,6 +9,7 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 import cv2 as cv
 import numpy as np
+from PyQt5.QtGui import QPixmap, QImage #
 
 x_value = None
 y_value = None
@@ -105,7 +106,7 @@ class VideoThread(threading.Thread):
             #cv.putText(frame, f"Afstand: {int(self.total_distance)} px", (10, 30),
             #       cv.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
             cv.imshow("Circles", frame)
-            cv.imshow("mask", mask)
+            
             if cv.waitKey(1) & 0xFF == 27:
                 self.running = False
                 break
@@ -263,7 +264,8 @@ class OpenCv(QWidget):
             self.x_line.set_data(self.time_data[-len(self.x_data):], self.x_data)
             self.x_ax.relim()  # Herbereken limieten
             self.x_ax.autoscale_view(scalex=False, scaley=False) # Alleen y-as auto
-            self.x_ax.set_xlim(max(0, len(self.x_data)-60), len(self.x_data))  # Scrollend venster
+            self.x_ax.set_xlim(60,0) # Ik heb dit verandert na mijn opdracht van het OC
+            self.x_ax.invert_xaxis() #Ik heb dit verandert na mijn opdracht van het OC
             self.x_canvas.draw()  # Teken opnieuw
             
             self.y_data.append(y_value)
@@ -274,7 +276,9 @@ class OpenCv(QWidget):
             self.y_ax.relim()
             self.y_ax.autoscale_view(scalex=False, scaley=False)
             self.y_ax.set_ylim(0, 600)  # Houd y tussen 0 en 600 pixels
-            self.y_ax.set_xlim(max(0, len(self.y_data)-60), len(self.y_data))  # Scrollend in tijd
+            self.y_ax.set_xlim(60,0)  #Ik heb dit verandert na mijn opdracht van het OC
+            
+            self.y_ax.invert_xaxis()  #Ik heb dit verandert na mijn opdracht van het OC
             self.y_canvas.draw()
                                       # Teken opnieuw
             
