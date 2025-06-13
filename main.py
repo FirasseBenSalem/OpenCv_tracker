@@ -158,6 +158,19 @@ class OpenCv(QWidget):
             
             # Hoofd layout (alles onder elkaar)
             main_layout = QVBoxLayout()
+            
+            
+            #buttons voor start en stop
+            button_layout = QHBoxLayout()
+            self.start_button = QPushButton("Start grafiek")
+            self.start_button.setStyleSheet("background-color: #02AAAA; color: white; font-size: 16px;")
+            self.start_button.clicked.connect(self.start_graph)
+
+            self.stop_button = QPushButton("Stop grafiek")
+            self.stop_button.setStyleSheet("background-color: #eb4933; color: white; font-size: 16px;")
+            self.stop_button.clicked.connect(self.stop_graph)
+
+            
             # x frame met grafiek
             x_frame = QFrame()
             x_frame.setStyleSheet("background-color: #3A3A3A; border-radius: 7px;")
@@ -187,10 +200,20 @@ class OpenCv(QWidget):
             self.timer = QTimer()
             self.timer.timeout.connect(self.update_data)
             self.timer.start(100)
+            
+            #voeg de buttons toe 
+            button_layout.addWidget(self.start_button)
+            button_layout.addWidget(self.stop_button)
+            main_layout.addLayout(button_layout)
+        
+        def start_graph(self):
+            if not self.timer.isActive():
+                self.timer.start(100)
 
-        
-        
-        
+        def stop_graph(self):
+            if self.timer.isActive():
+                self.timer.stop()
+
 
         def update_data(self):
             #Haalt x/RAM data op en update de GUI
