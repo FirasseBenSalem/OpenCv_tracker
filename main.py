@@ -22,7 +22,7 @@ class VideoThread(threading.Thread):
         self.orange_MIN = np.array([0, 92, 160], np.uint8)
         self.orange_MAX = np.array([20, 202, 255], np.uint8)
         self.points = []  #lijst om punten te bewaren voor het lijn
-
+        #self.total_distance = 0
     def dist(self, x1, y1, x2, y2):
         return (x1 - x2) ** 2 + (y1 - y2) ** 2
 
@@ -56,6 +56,11 @@ class VideoThread(threading.Thread):
                             chosen = i
                 cv.circle(frame, (chosen[0], chosen[1]), 1, (0, 100, 100), 3)
                 cv.circle(frame, (chosen[0], chosen[1]), chosen[2], (255, 0, 255), 3)
+                #if self.prevCircle is not None:
+                #    dx = chosen[0] - self.prevCircle[0]
+                #    dy = chosen[1] - self.prevCircle[1]
+                #    distance = (dx**2 + dy**2) ** 0.5
+                    #self.total_distance += distance
                 self.prevCircle = chosen
                 global x_value
                 x_value = chosen[0]
@@ -70,7 +75,11 @@ class VideoThread(threading.Thread):
                #teken lijnen tussen punten
                 for i in range(1, len(self.points)):
                     cv.line(frame, self.points[i - 1], self.points[i], (0, 255, 0), 2)
-
+            #cm_distance = self.total_distance / 100000  # pas 100 aan naargelang je test
+            #cv.putText(frame, f"Afstand: {cm_distance:.2f} cm", (200, 30),
+            #           cv.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+            #cv.putText(frame, f"Afstand: {int(self.total_distance)} px", (10, 30),
+            #       cv.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
             cv.imshow("Circles", frame)
             if cv.waitKey(1) & 0xFF == 27:
                 self.running = False
