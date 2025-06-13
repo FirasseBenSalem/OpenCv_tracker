@@ -19,8 +19,8 @@ class VideoThread(threading.Thread):
         self.videoCapture = cv.VideoCapture(0)
         self.running = True
         self.prevCircle = None
-        self.orange_MIN = np.array([0, 92, 160], np.uint8)
-        self.orange_MAX = np.array([20, 202, 255], np.uint8)
+        self.orange_MIN = np.array([0, 61, 226], np.uint8)
+        self.orange_MAX = np.array([47, 246, 255], np.uint8)
         self.points = []  #lijst om punten te bewaren voor het lijn
         #self.total_distance = 0
     def dist(self, x1, y1, x2, y2):
@@ -40,9 +40,33 @@ class VideoThread(threading.Thread):
             result = cv.bitwise_and(frame, frame, mask=mask)
 
             gray = cv.cvtColor(result, cv.COLOR_BGR2GRAY)
-            blur = cv.GaussianBlur(gray, (17, 17), 0)
 
-            circles = cv.HoughCircles(blur, cv.HOUGH_GRADIENT, 1.2, 100, param1=100, param2=30, minRadius=1, maxRadius=1000)
+            # Als al eerder een cirkel gevonden is beperk dan het zoekgebied
+            if self.prevCircle is not None:
+                x, y, r = self.prevCircle
+                radius = 100  # Hoe groot het zoekgebied rond vorige cirkel is
+                x1 = max(0, x - radius)
+                y1 = max(0, y - radius)
+                x2 = min(gray.shape[1], x + radius)
+                y2 = min(gray.shape[0], y + radius)
+                
+                cropped = gray[y1:y2, x1:x2]
+                blur = cv.GaussianBlur(cropped, (17, 17), 0)
+
+                circles = cv.HoughCircles(blur, cv.HOUGH_GRADIENT, 1.2, 100,
+                                           param1=100, param2=30, minRadius=1, maxRadius=1000)
+
+                if circles is not None:
+                    circles = np.uint16(np.around(circles))
+                    # Pas cirkelcoördinaten aan naar volledige beeld
+                    for i in circles[0, :]:
+                        i[0] += x1
+                        i[1] += y1
+            else:
+                # Eerste kee volledige beeld gebruiken
+                blur = cv.GaussianBlur(gray, (17, 17), 0)
+                circles = cv.HoughCircles(blur, cv.HOUGH_GRADIENT, 1.2, 100,
+                               param1=100, param2=30, minRadius=1, maxRadius=1000)
 
             if circles is not None:
                 circles = np.uint16(np.around(circles))
@@ -81,6 +105,7 @@ class VideoThread(threading.Thread):
             #cv.putText(frame, f"Afstand: {int(self.total_distance)} px", (10, 30),
             #       cv.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
             cv.imshow("Circles", frame)
+            cv.imshow("mask", mask)
             if cv.waitKey(1) & 0xFF == 27:
                 self.running = False
                 break
